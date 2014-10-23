@@ -18,6 +18,8 @@ Number of offspring 2
 Initialization      Random
 Termination cond.   Solution or 10,000 fitness evaluations
 
+After A.E. Eiben and J.E. Smith (2007).
+
 """
 
 from __future__ import print_function
