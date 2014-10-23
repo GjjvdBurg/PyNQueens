@@ -4,6 +4,8 @@ PyNQueens
 A Python implementation of a simple Evolutionary Algorithm solver for the 
 N-Queens problem.
 
+*Author: Gertjan van den Burg*
+
 To run the program simply run:
 
     python nqueens.py

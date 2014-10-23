@@ -16,7 +16,7 @@ Survival selection  Replace worst
 Population size     100
 Number of offspring 2
 Initialization      Random
-Termination cond.   Solution or 10,000 fitness evaluations
+Termination cond.   Solution or max. fitness evaluations
 
 After A.E. Eiben and J.E. Smith (2007).
 
