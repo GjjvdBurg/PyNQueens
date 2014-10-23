@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
 """
+Author: Gertjan van den Burg
+License: GNU GPL v2 (see LICENSE)
+
 n-Queens problem EA
 
 Representation      Permutation
