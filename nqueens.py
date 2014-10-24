@@ -172,11 +172,14 @@ def print_status(pop, it):
     EVAL_COUNT -= len(pop)
     txt = ""
     txt += "Running EA on %i-Queens problem\n" % N
-    txt += "Generation: %i\tEvals: %i/%i\n\n" % (it, EVAL_COUNT, MAX_EVAL)
+    txt += "Generation: %i\tEvals: %i/%i\n" % (it, EVAL_COUNT, MAX_EVAL)
 
     F = [fitness(x) for x in pop]
     L = sorted((e, i) for i, e in enumerate(F))
     L.reverse()
+    mean_fitness = float(sum(F))/float(len(F))
+    txt += "Mean population fitness: %3.3f\n\n" % (mean_fitness)
+
     best_idx = L[0][1]
     best_indiv = pop[best_idx]
     best_fit = F[best_idx]
@@ -190,10 +193,27 @@ def config_string(x):
     """ Construct a chess-board representation of a given permutation 
     representation """
     txt = "\n"
-    txt += "   " + " ".join([" %i" % i for i in range(1, N+1)]) + "\n"
+    if (N > 9):
+        txt += " "
+    txt += "    "
+    if (N > 9):
+        for i in range(1, N+1):
+            if (i < 10):
+                txt += "%i  " % i
+            else:
+                txt += "%i " % i
+    else:
+        for i in range(1, N+1):
+            txt += "%i  " % i
+    txt += "\n"
+    if (N > 9):
+        txt += " "
     txt += "   _" + "_".join(["__" for i in range(N)]) + "\n"
     for i in range(N):
-        txt += "%i |" % (i + 1)
+        if (N < 10):
+            txt += "%i |" % (i + 1)
+        else:
+            txt += " %i |" % (i + 1) if i < 9 else "%i |" % (i+1)
         for j in range(N):
             if x[j] == i+1:
                 txt += " x "
