@@ -28,7 +28,6 @@ import os
 import time
 from random import randint, random, sample, shuffle
 
-
 # Constants
 N = 8
 BASE_PERM = range(1, N+1)
@@ -155,9 +154,11 @@ def main():
     if EVAL_COUNT >= MAX_EVAL:
         print("Maximum number of fitness evaluations reached")
     if have_solution(population):
-        print("\n")
+        if (it == 0):
+            os.system('cls' if os.name == 'nt' else 'clear')
+            print("Found solution in initial population.")
         solutions = [x for x in population if fitness(x) == 0]
-        print("Found solution(s):")
+        print("Solution(s):")
         for s in solutions:
             print(s)
             print(config_string(s))
@@ -178,7 +179,10 @@ def print_status(pop, it):
     L = sorted((e, i) for i, e in enumerate(F))
     L.reverse()
     mean_fitness = float(sum(F))/float(len(F))
-    txt += "Mean population fitness: %3.3f\n\n" % (mean_fitness)
+    mean_variance = (float(sum((float(f)**2.0 for f in F)))/float(len(F)) - 
+            mean_fitness**2.0)
+    txt += ("Population statistics: mean = %3.3f\tvariance = %3.3f\n\n" % 
+            (mean_fitness, mean_variance))
 
     best_idx = L[0][1]
     best_indiv = pop[best_idx]
@@ -225,5 +229,7 @@ def config_string(x):
     return txt
 
 if __name__ == '__main__':
+    start_t = os.times()
     main()
-
+    end_t = os.times()
+    print("Total running time: %4.4f seconds" % (end_t[-1] - start_t[-1]))
