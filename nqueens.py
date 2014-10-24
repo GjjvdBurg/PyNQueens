@@ -131,7 +131,7 @@ def fitness(x):
             if use_min:
                 if ((x[idx_min] == x[n] + m) or (x[idx_min] == x[n] - m)):
                     checks += 1
-    return -checks
+    return -checks/2
 
 def have_solution(population):
     """ Check if a solution (0 checks) exists in the population. """
