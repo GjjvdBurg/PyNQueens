@@ -153,14 +153,12 @@ def main():
         print_status(population, it)
         print("Maximum number of fitness evaluations reached")
     if have_solution(population):
+        print_status(population, it)
+        s = next((x for x in population if fitness(x) == 0), None)
+        print("Permutation representation: %s" % repr(s))
         if (it == 0):
             os.system('cls' if os.name == 'nt' else 'clear')
             print("Found solution in initial population.")
-        solutions = [x for x in population if fitness(x) == 0]
-        print("Solution(s):")
-        for s in solutions:
-            print(s)
-            print(config_string(s))
 
 #######################
 # Auxiliary functions #
