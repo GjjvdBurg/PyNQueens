@@ -34,10 +34,25 @@ BASE_PERM = range(1, N+1)
 P_RECOMB = 1
 P_MUTATION = 0.8
 POPULATION_SIZE = 100
-MAX_EVAL = 100000
+MAX_EVAL = 10000
 
 # Global fitness evaluation count
 EVAL_COUNT = 0
+
+class Individual(object):
+    def __init__(self, perm=None):
+        self.x = perm
+        self._fitness = fitness(self.x)
+    @property
+    def fitness(self):
+        return self._fitness
+    def update(self):
+        self._fitness = fitness(self.x)
+    def __iter__(self):
+        return iter(self.x)
+    def __repr__(self):
+        return repr(self.x)
+
 
 def initialize():
     """ Initialize the population with random shuffles of the base permutation 
@@ -46,10 +61,11 @@ def initialize():
     for i in range(POPULATION_SIZE):
         copy = list(BASE_PERM)
         shuffle(copy)
-        population.append(copy)
+        ind = Individual(copy)
+        population.append(ind)
     return population
 
-def mutation(x):
+def mutation(ind):
     """ Perform a swap mutation of an individual with the mutation probability 
     """
     r = random()
@@ -59,12 +75,13 @@ def mutation(x):
             t = randint(0, N-1)
             if not t == s:
                 break
-        x[s], x[t] = x[t], x[s]
+        ind.x[s], ind.x[t] = ind.x[t], ind.x[s]
+    ind.update()
 
 def parent_selection(pop):
     """ Select parents for crossover by picking the best 2 out of random 5 """
     S = sample(pop, 5)
-    F = [fitness(x) for x in S]
+    F = [x.fitness for x in S]
 
     L = sorted((e, i) for i, e in enumerate(F))
     p1 = S[L[0][1]]
@@ -75,7 +92,7 @@ def parent_selection(pop):
 def survival_selection(pop, offspring):
     """ Perform survival selection by discarding the worst 2 """
     joined = pop + offspring
-    F = [fitness(x) for x in joined]
+    F = [x.fitness for x in joined]
 
     L = sorted((e, i) for i, e in enumerate(F))
     newpop = []
@@ -91,8 +108,8 @@ def crossover(p1, p2):
         return p1, p2
 
     r = randint(1, N-1)
-    seg1 = p1[:r]
-    seg2 = p2[:r]
+    seg1 = p1.x[:r]
+    seg2 = p2.x[:r]
 
     off1 = list(seg1)
     off2 = list(seg2)
@@ -105,7 +122,10 @@ def crossover(p1, p2):
         if not i in off2:
             off2.append(i)
 
-    return off1, off2
+    ind1 = Individual(off1)
+    ind2 = Individual(off2)
+
+    return ind1, ind2
 
 def fitness(x):
     """  Calculate fitness in phenotype space, by counting the number of 
@@ -132,7 +152,7 @@ def fitness(x):
 
 def have_solution(population):
     """ Check if a solution (0 checks) exists in the population. """
-    return any((fitness(x) == 0 for x in population))
+    return any((x.fitness == 0 for x in population))
 
 def main():
     """ Main loop, run until a solution is found or the maximum number of 
@@ -154,7 +174,7 @@ def main():
         print("Maximum number of fitness evaluations reached")
     if have_solution(population):
         print_status(population, it)
-        s = next((x for x in population if fitness(x) == 0), None)
+        s = next((x for x in population if x.fitness == 0), None)
         print("Permutation representation: %s" % repr(s))
         if (it == 0):
             print("Found solution in initial population.")
@@ -165,13 +185,11 @@ def main():
 
 def print_status(pop, it):
     """ Print status line continuously to stdout, with best solution """
-    global EVAL_COUNT
     txt = ""
     txt += "Running EA on %i-Queens problem\n" % N
     txt += "Generation: %i\tEvals: %i/%i\n" % (it, EVAL_COUNT, MAX_EVAL)
 
-    F = [fitness(x) for x in pop]
-    EVAL_COUNT -= len(pop)
+    F = [x.fitness for x in pop]
     L = sorted((e, i) for i, e in enumerate(F))
     mean_fitness = float(sum(F))/float(len(F))
     mean_variance = (float(sum((float(f)**2.0 for f in F)))/float(len(F)) - 
@@ -188,9 +206,10 @@ def print_status(pop, it):
     print(txt, end='\r')
     time.sleep(.1)
 
-def config_string(x):
+def config_string(ind):
     """ Construct a chess-board representation of a given permutation 
     representation """
+    x = ind.x
     txt = "\n"
     if (N > 9):
         txt += " "
