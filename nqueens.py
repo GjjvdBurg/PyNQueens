@@ -150,6 +150,7 @@ def main():
         population = survival_selection(population, [o1, o2])
         it += 1
     if EVAL_COUNT >= MAX_EVAL:
+        print_status(population, it)
         print("Maximum number of fitness evaluations reached")
     if have_solution(population):
         if (it == 0):
@@ -168,12 +169,12 @@ def main():
 def print_status(pop, it):
     """ Print status line continuously to stdout, with best solution """
     global EVAL_COUNT
-    EVAL_COUNT -= len(pop)
     txt = ""
     txt += "Running EA on %i-Queens problem\n" % N
     txt += "Generation: %i\tEvals: %i/%i\n" % (it, EVAL_COUNT, MAX_EVAL)
 
     F = [fitness(x) for x in pop]
+    EVAL_COUNT -= len(pop)
     L = sorted((e, i) for i, e in enumerate(F))
     mean_fitness = float(sum(F))/float(len(F))
     mean_variance = (float(sum((float(f)**2.0 for f in F)))/float(len(F)) - 
