@@ -67,7 +67,6 @@ def parent_selection(pop):
     F = [fitness(x) for x in S]
 
     L = sorted((e, i) for i, e in enumerate(F))
-    L.reverse()
     p1 = S[L[0][1]]
     p2 = S[L[1][1]]
 
@@ -79,7 +78,6 @@ def survival_selection(pop, offspring):
     F = [fitness(x) for x in joined]
 
     L = sorted((e, i) for i, e in enumerate(F))
-    L.reverse()
     newpop = []
     for i in range(POPULATION_SIZE):
         newpop.append(joined[L[i][1]])
@@ -130,7 +128,7 @@ def fitness(x):
             if use_min:
                 if ((x[idx_min] == x[n] + m) or (x[idx_min] == x[n] - m)):
                     checks += 1
-    return -checks/2
+    return checks/2
 
 def have_solution(population):
     """ Check if a solution (0 checks) exists in the population. """
@@ -177,7 +175,6 @@ def print_status(pop, it):
 
     F = [fitness(x) for x in pop]
     L = sorted((e, i) for i, e in enumerate(F))
-    L.reverse()
     mean_fitness = float(sum(F))/float(len(F))
     mean_variance = (float(sum((float(f)**2.0 for f in F)))/float(len(F)) - 
             mean_fitness**2.0)
