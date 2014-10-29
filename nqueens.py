@@ -157,7 +157,6 @@ def main():
         s = next((x for x in population if fitness(x) == 0), None)
         print("Permutation representation: %s" % repr(s))
         if (it == 0):
-            os.system('cls' if os.name == 'nt' else 'clear')
             print("Found solution in initial population.")
 
 #######################
