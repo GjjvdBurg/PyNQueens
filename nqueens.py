@@ -24,170 +24,164 @@ After A.E. Eiben and J.E. Smith (2007).
 
 from __future__ import print_function
 
+import argparse
 import os
 import time
+
 from random import randint, random, sample, shuffle
 
 # Constants
 N = 8
-BASE_PERM = range(1, N+1)
 P_RECOMB = 1
 P_MUTATION = 0.8
 POPULATION_SIZE = 100
 MAX_EVAL = 10000
 
-# Global fitness evaluation count
-EVAL_COUNT = 0
-
 class Individual(object):
     def __init__(self, perm=None):
         self.x = perm
-        self._fitness = fitness(self.x)
+        self._fitness = self.calculate_fitness()
     @property
     def fitness(self):
         return self._fitness
     def update(self):
-        self._fitness = fitness(self.x)
+        self._fitness = self.calculate_fitness()
     def __iter__(self):
         return iter(self.x)
     def __repr__(self):
         return repr(self.x)
+    def calculate_fitness(self):
+        # Calculate fitness in phenotype space
+        N = len(self.x)
+        checks = 0
+        for n in range(N):
+            for j in range(2, N):
+                m = j - 1
+                idx_plus = n + m
+                idx_min = n - m
+                use_plus = (0 <= idx_plus <= N-1)
+                use_min = (0 <= idx_min <= N-1)
+                if not (use_plus or use_min):
+                    continue
+                if use_plus:
+                    if ((self.x[idx_plus] == self.x[n] + m) or 
+                            (self.x[idx_plus] == self.x[n] - m)):
+                        checks += 1
+                if use_min:
+                    if ((self.x[idx_min] == self.x[n] + m) or 
+                            (self.x[idx_min] == self.x[n] - m)):
+                        checks += 1
+        return checks/2
 
+class Population(object):
+    def __init__(self, pop_size=POPULATION_SIZE, nqueens=N,
+            p_mutate=P_MUTATION, p_recomb=P_RECOMB, max_eval=MAX_EVAL):
+        self.population = []
+        self.pop_size = pop_size
+        self.nqueens = nqueens
+        self.prob_mutation = p_mutate
+        self.prob_recomb = p_recomb
+        self.eval_count = 0
+        self.max_eval = max_eval
 
-def initialize():
-    """ Initialize the population with random shuffles of the base permutation 
-    """
-    population = []
-    for i in range(POPULATION_SIZE):
-        copy = list(BASE_PERM)
-        shuffle(copy)
-        ind = Individual(copy)
-        population.append(ind)
-    return population
+        self.initialize_population()
 
-def mutation(ind):
-    """ Perform a swap mutation of an individual with the mutation probability 
-    """
-    r = random()
-    if (r < P_MUTATION):
-        s = randint(0, N-1)
-        while True:
-            t = randint(0, N-1)
-            if not t == s:
-                break
-        ind.x[s], ind.x[t] = ind.x[t], ind.x[s]
-    ind.update()
+    def initialize_population(self):
+        # Initialize the population with random shuffles of the base permutation 
+        for i in range(self.pop_size):
+            copy = list(range(1, self.nqueens+1))
+            shuffle(copy)
+            ind = Individual(copy)
+            self.population.append(ind)
+            self.eval_count += 1
 
-def parent_selection(pop):
-    """ Select parents for crossover by picking the best 2 out of random 5 """
-    S = sample(pop, 5)
-    F = [x.fitness for x in S]
+    def mutate(self, ind):
+        # Perform swap mutation of an individual with the mutation probability
+        r = random()
+        if r < self.prob_mutation:
+            s = randint(0, self.nqueens - 1)
+            t = randint(0, self.nqueens - 1)
+            while s == t:
+                t = randint(0, self.nqueens - 1)
+            ind.x[s], ind.x[t] = ind.x[t], ind.x[s]
+        ind.update()
+        self.eval_count += 1
 
-    L = sorted((e, i) for i, e in enumerate(F))
-    p1 = S[L[0][1]]
-    p2 = S[L[1][1]]
-
-    return p1, p2
-
-def survival_selection(pop, offspring):
-    """ Perform survival selection by discarding the worst 2 """
-    joined = pop + offspring
-    F = [x.fitness for x in joined]
-
-    L = sorted((e, i) for i, e in enumerate(F))
-    newpop = []
-    for i in range(POPULATION_SIZE):
-        newpop.append(joined[L[i][1]])
-
-    return newpop
-
-def crossover(p1, p2):
-    """ Perform crossover by random cut and crossfil. """
-    s = random()
-    if not (s < P_RECOMB):
+    def parent_selection(self):
+        # Select parents for crossover by picking the best 2 out of random 5
+        S = sample(self.population, 5)
+        F = [x.fitness for x in S]
+        L = sorted((e, i) for i, e in enumerate(F))
+        p1 = S[L[0][1]]
+        p2 = S[L[1][1]]
         return p1, p2
 
-    r = randint(1, N-1)
-    seg1 = p1.x[:r]
-    seg2 = p2.x[:r]
+    def survival_selection(self, offspring):
+        # Perform survival selection by discarding the worst 2
+        joined = self.population + offspring
+        F = [x.fitness for x in joined]
+        L = sorted((e, i) for i, e in enumerate(F))
+        newpop = []
+        for i in range(self.pop_size):
+            newpop.append(joined[L[i][1]])
+        self.population = newpop
 
-    off1 = list(seg1)
-    off2 = list(seg2)
+    def crossover(self, p1, p2):
+        s = random()
+        if not (s < self.prob_recomb):
+            return p1, p2
+        r = randint(1, N-1)
+        seg1 = p1.x[:r]
+        seg2 = p2.x[:r]
+        off1 = list(seg1)
+        off2 = list(seg2)
+        for i in p2:
+            if not i in off1:
+                off1.append(i)
+        for i in p1:
+            if not i in off2:
+                off2.append(i)
+        ind1 = Individual(off1)
+        ind2 = Individual(off2)
+        self.eval_count += 2
+        return ind1, ind2
 
-    for i in p2:
-        if not i in off1:
-            off1.append(i)
+    def have_solution(self):
+        return any((x.fitness == 0 for x in self.population))
 
-    for i in p1:
-        if not i in off2:
-            off2.append(i)
-
-    ind1 = Individual(off1)
-    ind2 = Individual(off2)
-
-    return ind1, ind2
-
-def fitness(x):
-    """  Calculate fitness in phenotype space, by counting the number of 
-    diagonal checks that can be done, and multiplying this by -1. """
-    global EVAL_COUNT
-    EVAL_COUNT += 1
-    checks = 0
-    for n in range(N):
-        for j in range(2, N):
-            m = j - 1
-            idx_plus = n + m
-            idx_min = n - m
-            use_plus = (0 <= idx_plus <= N-1)
-            use_min = (0 <= idx_min <= N-1)
-            if not (use_plus or use_min):
-                continue
-            if use_plus:
-                if ((x[idx_plus] == x[n] + m) or (x[idx_plus] == x[n] - m)):
-                    checks += 1
-            if use_min:
-                if ((x[idx_min] == x[n] + m) or (x[idx_min] == x[n] - m)):
-                    checks += 1
-    return checks/2
-
-def have_solution(population):
-    """ Check if a solution (0 checks) exists in the population. """
-    return any((x.fitness == 0 for x in population))
+    def evolve(self):
+        it = 0
+        while (not self.have_solution()) and (self.eval_count < self.max_eval):
+            print_status(self, it)
+            p1, p2 = self.parent_selection()
+            o1, o2 = self.crossover(p1, p2)
+            self.mutate(o1)
+            self.mutate(o2)
+            self.survival_selection([o1, o2])
+            it += 1
+        if self.eval_count >= self.max_eval:
+            print_status(self, it)
+            print("Maximum number of fitness evaluations reached")
+        if self.have_solution():
+            print_status(self, it)
+            s = next((x for x in self.population if x.fitness == 0), None)
+            print("Permutation representation: %s" % repr(s))
 
 def main():
-    """ Main loop, run until a solution is found or the maximum number of 
-    fitness evaluations is performed. """
-    global EVAL_COUNT
-    population = initialize()
-
-    it = 0
-    while (not have_solution(population)) and (EVAL_COUNT < MAX_EVAL):
-        print_status(population, it)
-        p1, p2 = parent_selection(population)
-        o1, o2 = crossover(p1, p2)
-        mutation(o1)
-        mutation(o2)
-        population = survival_selection(population, [o1, o2])
-        it += 1
-    if EVAL_COUNT >= MAX_EVAL:
-        print_status(population, it)
-        print("Maximum number of fitness evaluations reached")
-    if have_solution(population):
-        print_status(population, it)
-        s = next((x for x in population if x.fitness == 0), None)
-        print("Permutation representation: %s" % repr(s))
-        if (it == 0):
-            print("Found solution in initial population.")
+    p = Population()
+    p.evolve()
 
 #######################
 # Auxiliary functions #
 #######################
 
-def print_status(pop, it):
+def print_status(population, it):
     """ Print status line continuously to stdout, with best solution """
+    pop = population.population
     txt = ""
     txt += "Running EA on %i-Queens problem\n" % N
-    txt += "Generation: %i\tEvals: %i/%i\n" % (it, EVAL_COUNT, MAX_EVAL)
+    txt += "Generation: %i\tEvals: %i/%i\n" % (it, population.eval_count, 
+            population.max_eval)
 
     F = [x.fitness for x in pop]
     L = sorted((e, i) for i, e in enumerate(F))
